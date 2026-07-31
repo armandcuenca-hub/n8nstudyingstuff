@@ -1,0 +1,331 @@
+{
+  "name": "Google Form Lead to Salesforce",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg",
+          "mode": "list",
+          "cachedResultName": "n8n Leads Table Test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg/edit#gid=0"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "fcddd1d0-5dde-4e2c-91fa-409c5d4a96fd",
+      "name": "New Form Response",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        272
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "YpYEPDYXzriSwMLe",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const row = $input.item.json;\nfunction pick(keys) {\n  for (const wantRaw of keys) {\n    const want = String(wantRaw).toLowerCase().trim();\n    for (const k of Object.keys(row)) {\n      if (k.toLowerCase().trim() === want) {\n        const v = row[k];\n        if (v !== undefined && v !== null && String(v).trim() !== '') {\n          return String(v).trim();\n        }\n      }\n    }\n  }\n  return '';\n}\n// Normalize the casing of a single word.\n// - If the word is ALL UPPERCASE (e.g. \"JOHN\"), convert it to first-letter\n//   uppercase and the rest lowercase (e.g. \"John\").\n// - Otherwise, just capitalize the first letter and preserve the rest\n//   (keeps mixed-case names like \"McDonald\" or \"O'Brien\" intact).\nfunction normalizeWord(w) {\n  if (w === '') return '';\n  const isAllUpper = w === w.toUpperCase() && w !== w.toLowerCase();\n  const rest = isAllUpper ? w.slice(1).toLowerCase() : w.slice(1);\n  return w.charAt(0).toUpperCase() + rest;\n}\n// Capitalize each word of a name value.\nfunction capitalizeName(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  return s.split(/\\s+/).map(normalizeWord).join(' ');\n}\n// Detect whether a combined name field can be split into first + last name.\n// Returns { firstname, lastname, nameSplit } where nameSplit is true when a\n// single full-name value was validated as splittable and divided.\nfunction resolveName() {\n  const explicitFirst = pick(['first name', 'firstname', 'first']);\n  const explicitLast = pick(['last name', 'lastname', 'last']);\n  const combinedName = pick(['name', 'full name', 'fullname']);\n  let firstname = explicitFirst;\n  let lastname = explicitLast;\n  let nameSplit = false;\n  // Pick the source that may hold both names in one field.\n  let combinedSource = '';\n  if (explicitFirst === '' && explicitLast === '' && combinedName !== '') {\n    combinedSource = combinedName;\n  } else if (explicitLast === '' && /\\s/.test(explicitFirst)) {\n    // The first-name field actually contains a full name.\n    combinedSource = explicitFirst;\n  }\n  if (combinedSource !== '') {\n    const parts = combinedSource.split(/\\s+/).filter(function (p) { return p !== ''; });\n    if (parts.length >= 2) {\n      firstname = parts[0];\n      lastname = parts.slice(1).join(' ');\n      nameSplit = true;\n    } else {\n      firstname = combinedSource;\n      lastname = '';\n    }\n  }\n  return {\n    firstname: capitalizeName(firstname),\n    lastname: capitalizeName(lastname),\n    nameSplit: nameSplit,\n  };\n}\nconst name = resolveName();\nreturn {\n  json: {\n    email: pick(['email', 'email address', 'e-mail']),\n    firstname: name.firstname,\n    lastname: name.lastname,\n    nameSplit: name.nameSplit,\n    company: pick(['company', 'company name', 'organization', 'organisation']),\n    phone: pick(['phone', 'phone number', 'telephone', 'mobile']),\n    city: pick(['city', 'town']),\n    state: pick(['state', 'province', 'region']),\n    country: pick(['country']),\n    title: pick(['title', 'job title', 'role']),\n    website: pick(['website', 'web', 'url']),\n  },\n};"
+      },
+      "id": "cf2d8feb-8657-4fb8-8db9-63af56e59f22",
+      "name": "Normalize Form Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        272
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a93a8021-ac7c-49fa-a886-1640cdc19f80",
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "query": "=SELECT Id, FirstName, LastName, Company, Phone, MobilePhone, City, State, Country, Title, Website, Email FROM Lead WHERE Email = '{{ $json.email }}'"
+      },
+      "id": "ae512e7c-d999-4e77-9b18-288acc377878",
+      "name": "Salesforce Search",
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        192
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "hd9Mm7FF5kZ3Hodm",
+          "name": "Salesforce account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "has-id",
+              "leftValue": "={{ $json.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "23e226e6-a29c-4820-a3f4-2f7402fe5351",
+      "name": "Lead Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const existing = $('Salesforce Search').item.json;\nconst form = $('Normalize Form Data').item.json;\n// Keep existing value unless the form provides new, non-empty data for that field.\nfunction merge(newV, oldV) {\n  const n = newV === undefined || newV === null ? '' : String(newV).trim();\n  if (n !== '') return n;\n  return oldV === undefined || oldV === null ? '' : String(oldV);\n}\nreturn {\n  json: {\n    leadId: existing.Id,\n    email: merge(form.email, existing.Email),\n    firstname: merge(form.firstname, existing.FirstName),\n    lastname: merge(form.lastname, existing.LastName),\n    company: merge(form.company, existing.Company),\n    phone: merge(form.phone, existing.Phone),\n    city: merge(form.city, existing.City),\n    state: merge(form.state, existing.State),\n    country: merge(form.country, existing.Country),\n    title: merge(form.title, existing.Title),\n    website: merge(form.website, existing.Website),\n  },\n};"
+      },
+      "id": "106b09e6-08b8-42b8-a520-81abd2f3d98b",
+      "name": "Build Update Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "leadId": "={{ $json.leadId }}",
+        "updateFields": {
+          "city": "={{ $json.city }}",
+          "company": "={{ $json.company }}",
+          "country": "={{ $json.country }}",
+          "email": "={{ $json.email }}",
+          "firstname": "={{ $json.firstname }}",
+          "lastname": "={{ $json.lastname }}",
+          "phone": "={{ $json.phone }}",
+          "state": "={{ $json.state }}",
+          "title": "={{ $json.title }}",
+          "website": "={{ $json.website }}"
+        }
+      },
+      "id": "a28e68df-bd69-4be3-8503-44d7934cb369",
+      "name": "Update Existing Lead",
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        272
+      ],
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "hd9Mm7FF5kZ3Hodm",
+          "name": "Salesforce account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "fe642843-773f-4f34-a875-1af5788864d1",
+      "name": "Loop Over Rows",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "company": "={{ $('Normalize Form Data').item.json.company || 'Unknown' }}",
+        "lastname": "={{ $('Normalize Form Data').item.json.lastname || 'Unknown' }}",
+        "additionalFields": {
+          "city": "={{ $('Normalize Form Data').item.json.city }}",
+          "country": "={{ $('Normalize Form Data').item.json.country }}",
+          "email": "={{ $('Normalize Form Data').item.json.email }}",
+          "firstname": "={{ $('Normalize Form Data').item.json.firstname }}",
+          "phone": "={{ $('Normalize Form Data').item.json.phone }}",
+          "state": "={{ $('Normalize Form Data').item.json.state }}",
+          "title": "={{ $('Normalize Form Data').item.json.title }}",
+          "website": "={{ $('Normalize Form Data').item.json.website }}"
+        }
+      },
+      "id": "2b321937-2c52-4cc0-95e1-ae5cb2845c69",
+      "name": "Create New Lead",
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        288
+      ],
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "hd9Mm7FF5kZ3Hodm",
+          "name": "Salesforce account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "New Form Response": {
+      "main": [
+        [
+          {
+            "node": "Normalize Form Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Form Data": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salesforce Search": {
+      "main": [
+        [
+          {
+            "node": "Lead Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Exists?": {
+      "main": [
+        [
+          {
+            "node": "Build Update Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create New Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Update Payload": {
+      "main": [
+        [
+          {
+            "node": "Update Existing Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Existing Lead": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Rows": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salesforce Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Lead": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d4d60fef-20eb-4e78-8cb7-6b3950e11afd",
+  "meta": {
+    "instanceId": "2ba741940ed2bfefca7e270a79721104927155faaf5dc3eb2aae668f67258264"
+  },
+  "nodeGroups": [],
+  "id": "XqKE20FBvY4hzt0Y",
+  "tags": []
+}
