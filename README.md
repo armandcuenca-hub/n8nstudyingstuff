@@ -4,9 +4,9 @@ I. Google Sheets to Salesforce Free Dev Account Leads List:
    
 **Flow**
 
-_(Trigger Form: [https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg/edit?usp=sharing](https://docs.google.com/forms/d/e/1FAIpQLSesCS9xnJJ1r_rxIeCmnYnVlKN6Isg-gKZObEtoWvDrASEHDA/viewform?usp=dialog)) Adds new lead record as soon as new row is added._
+_(Trigger Form: https://docs.google.com/forms/d/e/1FAIpQLSesCS9xnJJ1r_rxIeCmnYnVlKN6Isg-gKZObEtoWvDrASEHDA/viewform?usp=dialog_
 
-<img width="1919" height="907" alt="n8nflowgoogtosalesforce2" src="https://github.com/user-attachments/assets/0df6c8c9-d05e-4c8e-ac9f-6a410c2a51a7" />
+<img width="1919" height="909" alt="Screenshot 2026-08-03 173338" src="https://github.com/user-attachments/assets/8cc3a12b-5854-4112-a45d-f6c515f32346" />
 
 **Results**
 
@@ -14,4 +14,4 @@ _(Trigger Form: [https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY1
 
 **To-Do**
 
-Add "Insert" node for Lead Source
+Add flow for Sales Rep assignment
