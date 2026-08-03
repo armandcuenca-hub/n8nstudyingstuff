@@ -10,3 +10,7 @@ _(Trigger Spreadsheet: https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2v
 **Results**
 
 <img width="1919" height="909" alt="simpleGoogleFormstoSalesforceResults" src="https://github.com/user-attachments/assets/38ee84d0-efd0-4f36-8d1f-025ea3ebac86" />
+
+**To-Do**
+
+Add "Insert" node for Lead Source
