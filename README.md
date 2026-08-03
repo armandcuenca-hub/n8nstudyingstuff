@@ -4,8 +4,9 @@ I. Google Sheets to Salesforce Free Dev Account Leads List:
    
 **Flow**
 
-_(Trigger Spreadsheet: https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg/edit?usp=sharing) Adds new lead record as soon as new row is added._
-<img width="1919" height="908" alt="simplen8nSheetstoSalesforce" src="https://github.com/user-attachments/assets/01af3f6c-b1de-4c6b-96e9-36f06dfccaff" />
+_(Trigger Form: [https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg/edit?usp=sharing](https://docs.google.com/forms/d/e/1FAIpQLSesCS9xnJJ1r_rxIeCmnYnVlKN6Isg-gKZObEtoWvDrASEHDA/viewform?usp=dialog)) Adds new lead record as soon as new row is added._
+
+<img width="1919" height="907" alt="n8nflowgoogtosalesforce2" src="https://github.com/user-attachments/assets/0df6c8c9-d05e-4c8e-ac9f-6a410c2a51a7" />
 
 **Results**
 
