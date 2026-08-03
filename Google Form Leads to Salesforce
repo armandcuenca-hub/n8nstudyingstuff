@@ -1,64 +1,39 @@
 {
-  "name": "Google Form Lead to Salesforce",
+  "name": "Google Form Webhook to Salesforce",
   "nodes": [
     {
       "parameters": {
-        "pollTimes": {
-          "item": [
-            {
-              "mode": "everyMinute"
-            }
-          ]
-        },
-        "documentId": {
-          "__rl": true,
-          "value": "1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg",
-          "mode": "list",
-          "cachedResultName": "n8n Leads Table Test",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hArXC56lNkPowkc2vBVKjY12F0uaBR15IOZ2xQSH6Gg/edit#gid=0"
-        },
-        "event": "rowAdded",
+        "httpMethod": "POST",
+        "path": "google-form-lead",
         "options": {}
       },
-      "id": "fcddd1d0-5dde-4e2c-91fa-409c5d4a96fd",
-      "name": "New Form Response",
-      "type": "n8n-nodes-base.googleSheetsTrigger",
-      "typeVersion": 1,
+      "id": "6d1b5a6d-e479-4413-b194-73f574bf04a0",
+      "name": "Form Submission Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
       "position": [
         0,
-        272
+        432
       ],
-      "credentials": {
-        "googleSheetsTriggerOAuth2Api": {
-          "id": "YpYEPDYXzriSwMLe",
-          "name": "Google Sheets Trigger account"
-        }
-      }
+      "webhookId": "72f94a83-64a8-4c72-9621-3ae2c4956b0c"
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const row = $input.item.json;\nfunction pick(keys) {\n  for (const wantRaw of keys) {\n    const want = String(wantRaw).toLowerCase().trim();\n    for (const k of Object.keys(row)) {\n      if (k.toLowerCase().trim() === want) {\n        const v = row[k];\n        if (v !== undefined && v !== null && String(v).trim() !== '') {\n          return String(v).trim();\n        }\n      }\n    }\n  }\n  return '';\n}\n// Normalize the casing of a single word.\n// - If the word is ALL UPPERCASE (e.g. \"JOHN\"), convert it to first-letter\n//   uppercase and the rest lowercase (e.g. \"John\").\n// - Otherwise, just capitalize the first letter and preserve the rest\n//   (keeps mixed-case names like \"McDonald\" or \"O'Brien\" intact).\nfunction normalizeWord(w) {\n  if (w === '') return '';\n  const isAllUpper = w === w.toUpperCase() && w !== w.toLowerCase();\n  const rest = isAllUpper ? w.slice(1).toLowerCase() : w.slice(1);\n  return w.charAt(0).toUpperCase() + rest;\n}\n// Capitalize each word of a name value.\nfunction capitalizeName(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  return s.split(/\\s+/).map(normalizeWord).join(' ');\n}\n// Detect whether a combined name field can be split into first + last name.\n// Returns { firstname, lastname, nameSplit } where nameSplit is true when a\n// single full-name value was validated as splittable and divided.\nfunction resolveName() {\n  const explicitFirst = pick(['first name', 'firstname', 'first']);\n  const explicitLast = pick(['last name', 'lastname', 'last']);\n  const combinedName = pick(['name', 'full name', 'fullname']);\n  let firstname = explicitFirst;\n  let lastname = explicitLast;\n  let nameSplit = false;\n  // Pick the source that may hold both names in one field.\n  let combinedSource = '';\n  if (explicitFirst === '' && explicitLast === '' && combinedName !== '') {\n    combinedSource = combinedName;\n  } else if (explicitLast === '' && /\\s/.test(explicitFirst)) {\n    // The first-name field actually contains a full name.\n    combinedSource = explicitFirst;\n  }\n  if (combinedSource !== '') {\n    const parts = combinedSource.split(/\\s+/).filter(function (p) { return p !== ''; });\n    if (parts.length >= 2) {\n      firstname = parts[0];\n      lastname = parts.slice(1).join(' ');\n      nameSplit = true;\n    } else {\n      firstname = combinedSource;\n      lastname = '';\n    }\n  }\n  return {\n    firstname: capitalizeName(firstname),\n    lastname: capitalizeName(lastname),\n    nameSplit: nameSplit,\n  };\n}\nconst name = resolveName();\nreturn {\n  json: {\n    email: pick(['email', 'email address', 'e-mail']),\n    firstname: name.firstname,\n    lastname: name.lastname,\n    nameSplit: name.nameSplit,\n    company: pick(['company', 'company name', 'organization', 'organisation']),\n    phone: pick(['phone', 'phone number', 'telephone', 'mobile']),\n    city: pick(['city', 'town']),\n    state: pick(['state', 'province', 'region']),\n    country: pick(['country']),\n    title: pick(['title', 'job title', 'role']),\n    website: pick(['website', 'web', 'url']),\n  },\n};"
+        "jsCode": "const row = $input.item.json.body || $input.item.json;\nfunction pick(keys) {\n  for (const wantRaw of keys) {\n    const want = String(wantRaw).toLowerCase().trim();\n    for (const k of Object.keys(row)) {\n      if (k.toLowerCase().trim() === want) {\n        const v = row[k];\n        if (v !== undefined && v !== null && String(v).trim() !== '') {\n          return String(v).trim();\n        }\n      }\n    }\n  }\n  return '';\n}\nfunction normalizeWord(w) {\n  if (w === '') return '';\n  const isAllUpper = w === w.toUpperCase() && w !== w.toLowerCase();\n  const rest = isAllUpper ? w.slice(1).toLowerCase() : w.slice(1);\n  return w.charAt(0).toUpperCase() + rest;\n}\nfunction capitalizeName(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  return s.split(/\\s+/).map(normalizeWord).join(' ');\n}\nconst US_STATES = { al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado', ct: 'Connecticut', de: 'Delaware', fl: 'Florida', ga: 'Georgia', hi: 'Hawaii', id: 'Idaho', il: 'Illinois', in: 'Indiana', ia: 'Iowa', ks: 'Kansas', ky: 'Kentucky', la: 'Louisiana', me: 'Maine', md: 'Maryland', ma: 'Massachusetts', mi: 'Michigan', mn: 'Minnesota', ms: 'Mississippi', mo: 'Missouri', mt: 'Montana', ne: 'Nebraska', nv: 'Nevada', nh: 'New Hampshire', nj: 'New Jersey', nm: 'New Mexico', ny: 'New York', nc: 'North Carolina', nd: 'North Dakota', oh: 'Ohio', ok: 'Oklahoma', or: 'Oregon', pa: 'Pennsylvania', ri: 'Rhode Island', sc: 'South Carolina', sd: 'South Dakota', tn: 'Tennessee', tx: 'Texas', ut: 'Utah', vt: 'Vermont', va: 'Virginia', wa: 'Washington', wv: 'West Virginia', wi: 'Wisconsin', wy: 'Wyoming', dc: 'District of Columbia' };\nconst COUNTRIES = { us: 'United States', usa: 'United States', unitedstatesofamerica: 'United States', uk: 'United Kingdom', gb: 'United Kingdom', greatbritain: 'United Kingdom', ca: 'Canada', can: 'Canada', au: 'Australia', aus: 'Australia' };\nfunction normalizeState(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  const key = s.toLowerCase().replace(/[.\\s]/g, '');\n  return US_STATES[key] || capitalizeName(s);\n}\nfunction normalizeCountry(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  const key = s.toLowerCase().replace(/[.\\s]/g, '');\n  return COUNTRIES[key] || capitalizeName(s);\n}\nfunction resolveName() {\n  const explicitFirst = pick(['first name', 'firstname', 'first']);\n  const explicitLast = pick(['last name', 'lastname', 'last']);\n  const combinedName = pick(['name', 'full name', 'fullname']);\n  let firstname = explicitFirst;\n  let lastname = explicitLast;\n  let nameSplit = false;\n  let combinedSource = '';\n  if (explicitFirst === '' && explicitLast === '' && combinedName !== '') {\n    combinedSource = combinedName;\n  } else if (explicitLast === '' && /\\s/.test(explicitFirst)) {\n    combinedSource = explicitFirst;\n  }\n  if (combinedSource !== '') {\n    const parts = combinedSource.split(/\\s+/).filter(function (p) { return p !== ''; });\n    if (parts.length >= 2) {\n      firstname = parts[0];\n      lastname = parts.slice(1).join(' ');\n      nameSplit = true;\n    } else {\n      firstname = combinedSource;\n      lastname = '';\n    }\n  }\n  return {\n    firstname: capitalizeName(firstname),\n    lastname: capitalizeName(lastname),\n    nameSplit: nameSplit,\n  };\n}\nconst name = resolveName();\nreturn {\n  json: {\n    email: pick(['email', 'email address', 'e-mail']),\n    firstname: name.firstname,\n    lastname: name.lastname,\n    nameSplit: name.nameSplit,\n    company: pick(['company', 'company name', 'organization', 'organisation']),\n    phone: pick(['mobile phone', 'mobile number', 'phone', 'phone number', 'telephone', 'mobile', 'cell', 'cell phone', 'contact number']),\n    city: pick(['city', 'town']),\n    state: normalizeState(pick(['state/province', 'state', 'province', 'region'])),\n    country: normalizeCountry(pick(['country'])),\n    title: pick(['title', 'job title', 'role']),\n    website: pick(['website', 'web', 'url']),\n  },\n};"
       },
-      "id": "cf2d8feb-8657-4fb8-8db9-63af56e59f22",
+      "id": "9c8164b8-d031-4709-8098-11301464bee9",
       "name": "Normalize Form Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         224,
-        272
+        432
       ]
     },
     {
       "parameters": {},
-      "id": "a93a8021-ac7c-49fa-a886-1640cdc19f80",
+      "id": "f930d620-671a-470d-b951-b5f8c25e7b8b",
       "name": "Done",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
@@ -72,7 +47,7 @@
         "resource": "search",
         "query": "=SELECT Id, FirstName, LastName, Company, Phone, MobilePhone, City, State, Country, Title, Website, Email FROM Lead WHERE Email = '{{ $json.email }}'"
       },
-      "id": "ae512e7c-d999-4e77-9b18-288acc377878",
+      "id": "9a095737-e5db-4490-9abe-176fbb167050",
       "name": "Salesforce Search",
       "type": "n8n-nodes-base.salesforce",
       "typeVersion": 1.1,
@@ -84,7 +59,7 @@
       "credentials": {
         "salesforceOAuth2Api": {
           "id": "hd9Mm7FF5kZ3Hodm",
-          "name": "Salesforce account"
+          "name": "Salesforce Free Dev Account"
         }
       }
     },
@@ -112,7 +87,7 @@
         },
         "options": {}
       },
-      "id": "23e226e6-a29c-4820-a3f4-2f7402fe5351",
+      "id": "146b147e-800b-4b2d-8ba4-80f8acc547b5",
       "name": "Lead Exists?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
@@ -124,14 +99,48 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const existing = $('Salesforce Search').item.json;\nconst form = $('Normalize Form Data').item.json;\n// Keep existing value unless the form provides new, non-empty data for that field.\nfunction merge(newV, oldV) {\n  const n = newV === undefined || newV === null ? '' : String(newV).trim();\n  if (n !== '') return n;\n  return oldV === undefined || oldV === null ? '' : String(oldV);\n}\nreturn {\n  json: {\n    leadId: existing.Id,\n    email: merge(form.email, existing.Email),\n    firstname: merge(form.firstname, existing.FirstName),\n    lastname: merge(form.lastname, existing.LastName),\n    company: merge(form.company, existing.Company),\n    phone: merge(form.phone, existing.Phone),\n    city: merge(form.city, existing.City),\n    state: merge(form.state, existing.State),\n    country: merge(form.country, existing.Country),\n    title: merge(form.title, existing.Title),\n    website: merge(form.website, existing.Website),\n  },\n};"
+        "jsCode": "const existing = $('Salesforce Search').item.json;\nconst form = $('Normalize Form Data').item.json;\nfunction merge(newV, oldV) {\n  const n = newV === undefined || newV === null ? '' : String(newV).trim();\n  if (n !== '') return n;\n  return oldV === undefined || oldV === null ? '' : String(oldV);\n}\nlet hasChanges = false;\nfunction merged(newV, oldV) {\n  const n = newV === undefined || newV === null ? '' : String(newV).trim();\n  const o = oldV === undefined || oldV === null ? '' : String(oldV).trim();\n  if (n !== '' && n !== o) hasChanges = true;\n  return merge(newV, oldV);\n}\nreturn {\n  json: {\n    leadId: existing.Id,\n    email: merged(form.email, existing.Email),\n    firstname: merged(form.firstname, existing.FirstName),\n    lastname: merged(form.lastname, existing.LastName),\n    company: merged(form.company, existing.Company),\n    mobilePhone: merged(form.phone, existing.MobilePhone),\n    city: merged(form.city, existing.City),\n    state: merged(form.state, existing.State),\n    country: merged(form.country, existing.Country),\n    title: merged(form.title, existing.Title),\n    website: merged(form.website, existing.Website),\n    hasChanges: hasChanges,\n  },\n};"
       },
-      "id": "106b09e6-08b8-42b8-a520-81abd2f3d98b",
+      "id": "c3054901-479c-4348-91e9-20a8c994475c",
       "name": "Build Update Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1120,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "has-changes",
+              "leftValue": "={{ $json.hasChanges }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f7a62642-d79d-4704-93d0-ced911fc8ebc",
+      "name": "Has Changes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
         96
       ]
     },
@@ -146,24 +155,24 @@
           "email": "={{ $json.email }}",
           "firstname": "={{ $json.firstname }}",
           "lastname": "={{ $json.lastname }}",
-          "phone": "={{ $json.phone }}",
+          "mobilePhone": "={{ $json.mobilePhone }}",
           "state": "={{ $json.state }}",
           "title": "={{ $json.title }}",
           "website": "={{ $json.website }}"
         }
       },
-      "id": "a28e68df-bd69-4be3-8503-44d7934cb369",
+      "id": "91b97be3-9a30-49cf-8c75-373ce9cc2c16",
       "name": "Update Existing Lead",
       "type": "n8n-nodes-base.salesforce",
       "typeVersion": 1.1,
       "position": [
-        1344,
+        1568,
         272
       ],
       "credentials": {
         "salesforceOAuth2Api": {
           "id": "hd9Mm7FF5kZ3Hodm",
-          "name": "Salesforce account"
+          "name": "Salesforce Free Dev Account"
         }
       }
     },
@@ -171,13 +180,13 @@
       "parameters": {
         "options": {}
       },
-      "id": "fe642843-773f-4f34-a875-1af5788864d1",
+      "id": "43bb6230-724d-4fb6-8b87-d102a2532eb0",
       "name": "Loop Over Rows",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
         448,
-        272
+        432
       ]
     },
     {
@@ -189,13 +198,14 @@
           "country": "={{ $('Normalize Form Data').item.json.country }}",
           "email": "={{ $('Normalize Form Data').item.json.email }}",
           "firstname": "={{ $('Normalize Form Data').item.json.firstname }}",
-          "phone": "={{ $('Normalize Form Data').item.json.phone }}",
+          "leadSource": "Other",
+          "mobilePhone": "={{ $('Normalize Form Data').item.json.phone }}",
           "state": "={{ $('Normalize Form Data').item.json.state }}",
           "title": "={{ $('Normalize Form Data').item.json.title }}",
           "website": "={{ $('Normalize Form Data').item.json.website }}"
         }
       },
-      "id": "2b321937-2c52-4cc0-95e1-ae5cb2845c69",
+      "id": "30575f70-416c-4c15-8d9c-6d2e5389ef08",
       "name": "Create New Lead",
       "type": "n8n-nodes-base.salesforce",
       "typeVersion": 1.1,
@@ -206,14 +216,14 @@
       "credentials": {
         "salesforceOAuth2Api": {
           "id": "hd9Mm7FF5kZ3Hodm",
-          "name": "Salesforce account"
+          "name": "Salesforce Free Dev Account"
         }
       }
     }
   ],
   "pinData": {},
   "connections": {
-    "New Form Response": {
+    "Form Submission Webhook": {
       "main": [
         [
           {
@@ -268,7 +278,25 @@
       "main": [
         [
           {
+            "node": "Has Changes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Changes?": {
+      "main": [
+        [
+          {
             "node": "Update Existing Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Rows",
             "type": "main",
             "index": 0
           }
@@ -319,13 +347,14 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "errorWorkflow": "m8wiPGZFd2nZTH7k"
   },
-  "versionId": "d4d60fef-20eb-4e78-8cb7-6b3950e11afd",
+  "versionId": "ca0df31a-d19a-42ce-9aa2-91d0babab433",
   "meta": {
     "instanceId": "2ba741940ed2bfefca7e270a79721104927155faaf5dc3eb2aae668f67258264"
   },
   "nodeGroups": [],
-  "id": "XqKE20FBvY4hzt0Y",
+  "id": "Ct682YQ5SAUZdtkS",
   "tags": []
 }
