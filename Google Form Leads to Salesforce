@@ -7,13 +7,13 @@
         "path": "google-form-lead",
         "options": {}
       },
-      "id": "6d1b5a6d-e479-4413-b194-73f574bf04a0",
+      "id": "e188c58f-dba2-4f36-b402-d88c59f9e14e",
       "name": "Form Submission Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
         0,
-        432
+        32
       ],
       "webhookId": "72f94a83-64a8-4c72-9621-3ae2c4956b0c"
     },
@@ -22,24 +22,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "const row = $input.item.json.body || $input.item.json;\nfunction pick(keys) {\n  for (const wantRaw of keys) {\n    const want = String(wantRaw).toLowerCase().trim();\n    for (const k of Object.keys(row)) {\n      if (k.toLowerCase().trim() === want) {\n        const v = row[k];\n        if (v !== undefined && v !== null && String(v).trim() !== '') {\n          return String(v).trim();\n        }\n      }\n    }\n  }\n  return '';\n}\nfunction normalizeWord(w) {\n  if (w === '') return '';\n  const isAllUpper = w === w.toUpperCase() && w !== w.toLowerCase();\n  const rest = isAllUpper ? w.slice(1).toLowerCase() : w.slice(1);\n  return w.charAt(0).toUpperCase() + rest;\n}\nfunction capitalizeName(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  return s.split(/\\s+/).map(normalizeWord).join(' ');\n}\nconst US_STATES = { al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado', ct: 'Connecticut', de: 'Delaware', fl: 'Florida', ga: 'Georgia', hi: 'Hawaii', id: 'Idaho', il: 'Illinois', in: 'Indiana', ia: 'Iowa', ks: 'Kansas', ky: 'Kentucky', la: 'Louisiana', me: 'Maine', md: 'Maryland', ma: 'Massachusetts', mi: 'Michigan', mn: 'Minnesota', ms: 'Mississippi', mo: 'Missouri', mt: 'Montana', ne: 'Nebraska', nv: 'Nevada', nh: 'New Hampshire', nj: 'New Jersey', nm: 'New Mexico', ny: 'New York', nc: 'North Carolina', nd: 'North Dakota', oh: 'Ohio', ok: 'Oklahoma', or: 'Oregon', pa: 'Pennsylvania', ri: 'Rhode Island', sc: 'South Carolina', sd: 'South Dakota', tn: 'Tennessee', tx: 'Texas', ut: 'Utah', vt: 'Vermont', va: 'Virginia', wa: 'Washington', wv: 'West Virginia', wi: 'Wisconsin', wy: 'Wyoming', dc: 'District of Columbia' };\nconst COUNTRIES = { us: 'United States', usa: 'United States', unitedstatesofamerica: 'United States', uk: 'United Kingdom', gb: 'United Kingdom', greatbritain: 'United Kingdom', ca: 'Canada', can: 'Canada', au: 'Australia', aus: 'Australia' };\nfunction normalizeState(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  const key = s.toLowerCase().replace(/[.\\s]/g, '');\n  return US_STATES[key] || capitalizeName(s);\n}\nfunction normalizeCountry(value) {\n  const s = String(value === undefined || value === null ? '' : value).trim();\n  if (s === '') return '';\n  const key = s.toLowerCase().replace(/[.\\s]/g, '');\n  return COUNTRIES[key] || capitalizeName(s);\n}\nfunction resolveName() {\n  const explicitFirst = pick(['first name', 'firstname', 'first']);\n  const explicitLast = pick(['last name', 'lastname', 'last']);\n  const combinedName = pick(['name', 'full name', 'fullname']);\n  let firstname = explicitFirst;\n  let lastname = explicitLast;\n  let nameSplit = false;\n  let combinedSource = '';\n  if (explicitFirst === '' && explicitLast === '' && combinedName !== '') {\n    combinedSource = combinedName;\n  } else if (explicitLast === '' && /\\s/.test(explicitFirst)) {\n    combinedSource = explicitFirst;\n  }\n  if (combinedSource !== '') {\n    const parts = combinedSource.split(/\\s+/).filter(function (p) { return p !== ''; });\n    if (parts.length >= 2) {\n      firstname = parts[0];\n      lastname = parts.slice(1).join(' ');\n      nameSplit = true;\n    } else {\n      firstname = combinedSource;\n      lastname = '';\n    }\n  }\n  return {\n    firstname: capitalizeName(firstname),\n    lastname: capitalizeName(lastname),\n    nameSplit: nameSplit,\n  };\n}\nconst name = resolveName();\nreturn {\n  json: {\n    email: pick(['email', 'email address', 'e-mail']),\n    firstname: name.firstname,\n    lastname: name.lastname,\n    nameSplit: name.nameSplit,\n    company: pick(['company', 'company name', 'organization', 'organisation']),\n    phone: pick(['mobile phone', 'mobile number', 'phone', 'phone number', 'telephone', 'mobile', 'cell', 'cell phone', 'contact number']),\n    city: pick(['city', 'town']),\n    state: normalizeState(pick(['state/province', 'state', 'province', 'region'])),\n    country: normalizeCountry(pick(['country'])),\n    title: pick(['title', 'job title', 'role']),\n    website: pick(['website', 'web', 'url']),\n  },\n};"
       },
-      "id": "9c8164b8-d031-4709-8098-11301464bee9",
+      "id": "fd0f76e1-6a36-403d-aa1b-dc3051a9bb7d",
       "name": "Normalize Form Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         224,
-        432
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "f930d620-671a-470d-b951-b5f8c25e7b8b",
-      "name": "Done",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        672,
-        0
+        32
       ]
     },
     {
@@ -47,13 +36,13 @@
         "resource": "search",
         "query": "=SELECT Id, FirstName, LastName, Company, Phone, MobilePhone, City, State, Country, Title, Website, Email FROM Lead WHERE Email = '{{ $json.email }}'"
       },
-      "id": "9a095737-e5db-4490-9abe-176fbb167050",
+      "id": "9e86ebe3-9a90-4c3b-bd40-631a215228f2",
       "name": "Salesforce Search",
       "type": "n8n-nodes-base.salesforce",
       "typeVersion": 1.1,
       "position": [
-        672,
-        192
+        448,
+        32
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -87,13 +76,13 @@
         },
         "options": {}
       },
-      "id": "146b147e-800b-4b2d-8ba4-80f8acc547b5",
+      "id": "857a9014-68cd-42c4-bdf1-ef953b6b8b7f",
       "name": "Lead Exists?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        896,
-        192
+        672,
+        32
       ]
     },
     {
@@ -101,13 +90,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "const existing = $('Salesforce Search').item.json;\nconst form = $('Normalize Form Data').item.json;\nfunction merge(newV, oldV) {\n  const n = newV === undefined || newV === null ? '' : String(newV).trim();\n  if (n !== '') return n;\n  return oldV === undefined || oldV === null ? '' : String(oldV);\n}\nlet hasChanges = false;\nfunction merged(newV, oldV) {\n  const n = newV === undefined || newV === null ? '' : String(newV).trim();\n  const o = oldV === undefined || oldV === null ? '' : String(oldV).trim();\n  if (n !== '' && n !== o) hasChanges = true;\n  return merge(newV, oldV);\n}\nreturn {\n  json: {\n    leadId: existing.Id,\n    email: merged(form.email, existing.Email),\n    firstname: merged(form.firstname, existing.FirstName),\n    lastname: merged(form.lastname, existing.LastName),\n    company: merged(form.company, existing.Company),\n    mobilePhone: merged(form.phone, existing.MobilePhone),\n    city: merged(form.city, existing.City),\n    state: merged(form.state, existing.State),\n    country: merged(form.country, existing.Country),\n    title: merged(form.title, existing.Title),\n    website: merged(form.website, existing.Website),\n    hasChanges: hasChanges,\n  },\n};"
       },
-      "id": "c3054901-479c-4348-91e9-20a8c994475c",
+      "id": "8b27d5ca-a311-45d5-8dd7-3ab988276ac5",
       "name": "Build Update Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1120,
-        96
+        896,
+        -32
       ]
     },
     {
@@ -135,13 +124,13 @@
         },
         "options": {}
       },
-      "id": "f7a62642-d79d-4704-93d0-ced911fc8ebc",
+      "id": "25ececb5-11c4-4e59-bde2-33eb1f9d19d0",
       "name": "Has Changes?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1344,
-        96
+        1120,
+        -32
       ]
     },
     {
@@ -161,13 +150,13 @@
           "website": "={{ $json.website }}"
         }
       },
-      "id": "91b97be3-9a30-49cf-8c75-373ce9cc2c16",
+      "id": "93bc09fb-5e13-4850-ab70-053a0edd99e4",
       "name": "Update Existing Lead",
       "type": "n8n-nodes-base.salesforce",
       "typeVersion": 1.1,
       "position": [
-        1568,
-        272
+        1344,
+        -112
       ],
       "credentials": {
         "salesforceOAuth2Api": {
@@ -177,16 +166,14 @@
       }
     },
     {
-      "parameters": {
-        "options": {}
-      },
-      "id": "43bb6230-724d-4fb6-8b87-d102a2532eb0",
-      "name": "Loop Over Rows",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
+      "parameters": {},
+      "id": "27a2a2ee-56e5-465d-9a9e-e2981dea77b3",
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
       "position": [
-        448,
-        432
+        2016,
+        32
       ]
     },
     {
@@ -205,14 +192,79 @@
           "website": "={{ $('Normalize Form Data').item.json.website }}"
         }
       },
-      "id": "30575f70-416c-4c15-8d9c-6d2e5389ef08",
+      "id": "8fb0a5c0-dd2e-4782-98fa-72e44afa6447",
       "name": "Create New Lead",
       "type": "n8n-nodes-base.salesforce",
       "typeVersion": 1.1,
       "position": [
-        1120,
-        288
+        1568,
+        176
       ],
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "hd9Mm7FF5kZ3Hodm",
+          "name": "Salesforce Free Dev Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addToCampaign",
+        "leadId": "={{ $('Create New Lead').item.json.id }}",
+        "campaignId": "701fj00001X0vURAAZ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1.1,
+      "position": [
+        1792,
+        176
+      ],
+      "id": "07dbf953-2567-4009-a61e-3f9ccf7b09e6",
+      "name": "Add To Lead Nurturing Campaign",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "hd9Mm7FF5kZ3Hodm",
+          "name": "Salesforce Free Dev Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Owner.Email }}",
+        "subject": "A Lead Has Updated Their Info",
+        "message": "=Hi {{ $json.Owner.Name }}\n<br><br>\nA lead has updated their info, check their activity to see if they are re-engaging with us.\n<br><br>\nEmail: {{ $('Build Update Payload').item.json.email }}\n<br>\nName: {{ $('Build Update Payload').item.json.firstname }} {{ $('Build Update Payload').item.json.lastname }}\n<br>\nCompany: {{ $('Build Update Payload').item.json.company }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        -112
+      ],
+      "id": "26c113f3-c0d7-47bd-b454-519a4b56e1e0",
+      "name": "Notify Lead Owner",
+      "webhookId": "c9ab5d65-e8a7-480c-8b77-8cea3d089001",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zCxATA0VRqJvTyn6",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "query": "=SELECT\n    Id,\n    Email,\n    Owner.Name,\n    Owner.Email\nFROM Lead\nWHERE Id = '{{ $('Build Update Payload').item.json.leadId }}'"
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1.1,
+      "position": [
+        1568,
+        -112
+      ],
+      "id": "d6551a8b-e6b6-46fc-8e8b-4fad87d75bf9",
+      "name": "Search Lead Owner",
       "credentials": {
         "salesforceOAuth2Api": {
           "id": "hd9Mm7FF5kZ3Hodm",
@@ -221,7 +273,51 @@
       }
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Form Submission Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "ascuenca.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (compatible; Google-Apps-Script; beanserver; +https://script.google.com; id: UAEmdDd9p6pXDoNw1K_kO8Y6XtPhwEEa5RaU)",
+            "content-length": "151",
+            "accept-encoding": "gzip, br",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "34.98.143.4",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "US",
+            "cf-ray": "a25a248acebfc9c1-ORD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "x-forwarded-for": "34.98.143.4, 172.70.179.99",
+            "x-forwarded-host": "ascuenca.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-28-854bc9cc5d-tnzht",
+            "x-is-trusted": "yes",
+            "x-real-ip": "34.98.143.4"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "Name": "Armanda Cuenco",
+            "Email": "asc19oi@yahoo.com",
+            "Mobile Number": "96956108763",
+            "Company": "News INC",
+            "Title": "CTO",
+            "Country": "",
+            "State/Province": ""
+          },
+          "webhookUrl": "https://ascuenca.app.n8n.cloud/webhook/google-form-lead",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
   "connections": {
     "Form Submission Webhook": {
       "main": [
@@ -238,7 +334,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Rows",
+            "node": "Salesforce Search",
             "type": "main",
             "index": 0
           }
@@ -296,7 +392,7 @@
         ],
         [
           {
-            "node": "Loop Over Rows",
+            "node": "Done",
             "type": "main",
             "index": 0
           }
@@ -307,25 +403,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Rows",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Over Rows": {
-      "main": [
-        [
-          {
-            "node": "Done",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Salesforce Search",
+            "node": "Search Lead Owner",
             "type": "main",
             "index": 0
           }
@@ -336,7 +414,40 @@
       "main": [
         [
           {
-            "node": "Loop Over Rows",
+            "node": "Add To Lead Nurturing Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add To Lead Nurturing Campaign": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Lead Owner": {
+      "main": [
+        [
+          {
+            "node": "Notify Lead Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Lead Owner": {
+      "main": [
+        [
+          {
+            "node": "Done",
             "type": "main",
             "index": 0
           }
@@ -350,8 +461,9 @@
     "binaryMode": "separate",
     "errorWorkflow": "m8wiPGZFd2nZTH7k"
   },
-  "versionId": "ca0df31a-d19a-42ce-9aa2-91d0babab433",
+  "versionId": "ad3b0448-f50e-44ba-a9c6-f439c2bdaf52",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "2ba741940ed2bfefca7e270a79721104927155faaf5dc3eb2aae668f67258264"
   },
   "nodeGroups": [],
