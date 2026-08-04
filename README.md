@@ -6,7 +6,7 @@ I. Google Sheets to Salesforce Free Dev Account Leads List:
 
 _(Trigger Form: https://docs.google.com/forms/d/e/1FAIpQLSesCS9xnJJ1r_rxIeCmnYnVlKN6Isg-gKZObEtoWvDrASEHDA/viewform?usp=dialog_
 
-<img width="1919" height="909" alt="Screenshot 2026-08-03 173338" src="https://github.com/user-attachments/assets/8cc3a12b-5854-4112-a45d-f6c515f32346" />
+<img width="1919" height="909" alt="Screenshot 2026-08-04 103639" src="https://github.com/user-attachments/assets/aee4d846-e3e7-4c74-91d4-ee1f86806040" />
 
 **Results**
 
